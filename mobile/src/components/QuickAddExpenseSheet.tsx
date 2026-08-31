@@ -20,6 +20,8 @@ interface Props {
   onSaved: () => void;
 }
 
+const INSTALLMENT_OPTIONS = [3, 6, 9, 12, 18, 24];
+
 const emptyState = {
   amount: "",
   type: "expense" as TransactionType,
@@ -29,6 +31,8 @@ const emptyState = {
   storeName: "",
   paymentMethod: null as PaymentMethod | null,
   isEssential: false,
+  installments: null as number | null,
+  showCustomInstallmentsInput: false,
 };
 
 export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
@@ -59,7 +63,12 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
   }
 
   const parsedAmount = Number(state.amount.replace(",", "."));
-  const canSave = parsedAmount > 0 && state.paymentMethod !== null && !saving;
+  const needsInstallments = state.type === "expense" && state.paymentMethod === "credit_card";
+  const canSave =
+    parsedAmount > 0 &&
+    state.paymentMethod !== null &&
+    (!needsInstallments || (state.installments !== null && state.installments >= 1)) &&
+    !saving;
 
   async function handleSave() {
     if (!canSave || state.paymentMethod === null) return;
@@ -77,6 +86,7 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
           !state.selectedProduct && state.productQuery.trim() ? state.productQuery.trim() : null,
         isEssential: state.isEssential,
         date: new Date().toISOString(),
+        totalInstallments: needsInstallments ? state.installments : null,
       });
       reset();
       onSaved();
@@ -161,7 +171,14 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
               <Pressable
                 key={pm.value}
                 style={[styles.paymentPill, state.paymentMethod === pm.value && styles.paymentPillActive]}
-                onPress={() => setState((s) => ({ ...s, paymentMethod: pm.value }))}
+                onPress={() =>
+                  setState((s) => ({
+                    ...s,
+                    paymentMethod: pm.value,
+                    installments: pm.value === "credit_card" ? s.installments : null,
+                    showCustomInstallmentsInput: pm.value === "credit_card" ? s.showCustomInstallmentsInput : false,
+                  }))
+                }
               >
                 <Text
                   style={[
@@ -174,6 +191,56 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
               </Pressable>
             ))}
           </View>
+
+          {state.type === "expense" && state.paymentMethod === "credit_card" && (
+            <View style={styles.installmentsSection}>
+              <Text style={styles.essentialLabel}>¿En cuántas cuotas?</Text>
+              <View style={styles.paymentRow}>
+                {INSTALLMENT_OPTIONS.map((n) => (
+                  <Pressable
+                    key={n}
+                    style={[
+                      styles.paymentPill,
+                      state.installments === n && !state.showCustomInstallmentsInput && styles.paymentPillActive,
+                    ]}
+                    onPress={() => setState((s) => ({ ...s, installments: n, showCustomInstallmentsInput: false }))}
+                  >
+                    <Text
+                      style={[
+                        styles.paymentPillText,
+                        state.installments === n && !state.showCustomInstallmentsInput && styles.paymentPillTextActive,
+                      ]}
+                    >
+                      {n}
+                    </Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  style={[styles.paymentPill, state.showCustomInstallmentsInput && styles.paymentPillActive]}
+                  onPress={() => setState((s) => ({ ...s, showCustomInstallmentsInput: true, installments: null }))}
+                >
+                  <Text style={[styles.paymentPillText, state.showCustomInstallmentsInput && styles.paymentPillTextActive]}>
+                    Otra
+                  </Text>
+                </Pressable>
+              </View>
+              {state.showCustomInstallmentsInput && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Cantidad de cuotas"
+                  keyboardType="number-pad"
+                  value={state.installments !== null ? String(state.installments) : ""}
+                  onChangeText={(text) => {
+                    const parsed = parseInt(text, 10);
+                    setState((s) => ({
+                      ...s,
+                      installments: Number.isFinite(parsed) && parsed > 0 ? parsed : null,
+                    }));
+                  }}
+                />
+              )}
+            </View>
+          )}
 
           <View style={styles.actionsRow}>
             <Pressable
@@ -216,6 +283,7 @@ const styles = StyleSheet.create({
   essentialRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   essentialLabel: { fontSize: 14, color: "#333" },
   paymentRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  installmentsSection: { gap: 8 },
   paymentPill: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, backgroundColor: "#eee" },
   paymentPillActive: { backgroundColor: "#2563eb" },
   paymentPillText: { color: "#1f2937", fontSize: 13 },
