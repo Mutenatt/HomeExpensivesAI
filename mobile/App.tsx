@@ -1,11 +1,27 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { Session } from '@supabase/supabase-js';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
+import { InstallmentsScreen } from './src/screens/InstallmentsScreen';
 import { supabase } from './src/lib/supabase';
 import { getLocalDb } from './src/lib/localDb';
+
+const Tab = createBottomTabNavigator();
+
+function AppTabs({ userId }: { userId: string }) {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator screenOptions={{ headerShown: false }}>
+        <Tab.Screen name="Gastos">{() => <DashboardScreen userId={userId} />}</Tab.Screen>
+        <Tab.Screen name="Cuotas">{() => <InstallmentsScreen userId={userId} />}</Tab.Screen>
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -33,7 +49,7 @@ export default function App() {
 
   return (
     <>
-      {session ? <DashboardScreen userId={session.user.id} /> : <AuthScreen />}
+      {session ? <AppTabs userId={session.user.id} /> : <AuthScreen />}
       <StatusBar style="auto" />
     </>
   );
