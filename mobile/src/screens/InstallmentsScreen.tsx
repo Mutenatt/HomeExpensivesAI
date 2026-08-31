@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 12 },
   headerTitle: { fontSize: 24, fontWeight: "700" },
-  headerTotal: { fontSize: 15, color: "#555", marginTop: 4 },
+  headerTotal: { fontSize: 15, color: "#888", marginTop: 4 },
   listContent: { paddingHorizontal: 20, paddingBottom: 40 },
   row: {
     flexDirection: "row",
