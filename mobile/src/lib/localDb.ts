@@ -45,6 +45,15 @@ async function openAndMigrate(): Promise<LocalDb> {
       synced INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  // SQLite no soporta "ADD COLUMN IF NOT EXISTS": si la columna ya existe
+  // (instalaciones previas de la app), el ALTER falla y se ignora ese error.
+  try {
+    await db.execAsync(`ALTER TABLE pending_transactions ADD COLUMN total_installments INTEGER;`);
+  } catch {
+    // columna ya presente, no-op
+  }
+
   return db;
 }
 
@@ -112,14 +121,15 @@ export interface PendingTransactionInput {
   productNameNew: string | null;
   isEssential: boolean;
   date: string;
+  totalInstallments: number | null;
 }
 
 export async function enqueuePendingTransaction(input: PendingTransactionInput): Promise<void> {
   const db = await getLocalDb();
   await db.runAsync(
     `INSERT INTO pending_transactions
-       (local_id, amount, type, payment_method, store_name, product_id, product_name_new, is_essential, date, created_at, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+       (local_id, amount, type, payment_method, store_name, product_id, product_name_new, is_essential, date, created_at, synced, total_installments)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
     [
       input.localId,
       input.amount,
@@ -131,6 +141,7 @@ export async function enqueuePendingTransaction(input: PendingTransactionInput):
       input.isEssential ? 1 : 0,
       input.date,
       new Date().toISOString(),
+      input.totalInstallments,
     ],
   );
 }
@@ -147,6 +158,7 @@ export interface PendingTransactionRow {
   date: string;
   created_at: string;
   synced: number;
+  total_installments: number | null;
 }
 
 export async function getUnsyncedTransactions(): Promise<PendingTransactionRow[]> {
