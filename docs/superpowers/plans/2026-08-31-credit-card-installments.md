@@ -1,6 +1,6 @@
 # UI de Cuotas de Tarjeta de Crédito — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Permitir cargar la cantidad de cuotas al registrar un gasto con tarjeta de crédito, generar el cronograma de pagos en Supabase, y ver/gestionar las cuotas pendientes desde una pantalla nueva.
 
@@ -31,12 +31,12 @@
 **Interfaces:**
 - Produces: `calculateInstallmentSchedule(totalAmount: number, totalInstallments: number, purchaseDate: Date): InstallmentScheduleItem[]`, donde `InstallmentScheduleItem = { installment_number: number; total_installments: number; amount_per_installment: number; due_date: string }` (`due_date` en formato `"YYYY-MM-DD"`). Usado por Task 3 (`sync.ts`).
 
-- [ ] **Step 1: Instalar Jest y ts-jest**
+- [x] **Step 1: Instalar Jest y ts-jest**
 
 Run: `cd mobile && npm install --save-dev jest ts-jest @types/jest`
 Expected: `mobile/package.json` y `mobile/package-lock.json` actualizados con las 3 dependencias nuevas en `devDependencies`.
 
-- [ ] **Step 2: Configurar Jest**
+- [x] **Step 2: Configurar Jest**
 
 Crear `mobile/jest.config.js`:
 
@@ -55,7 +55,7 @@ Agregar en `mobile/package.json`, dentro de `"scripts"`:
 "test": "jest"
 ```
 
-- [ ] **Step 3: Escribir los tests (deben fallar primero)**
+- [x] **Step 3: Escribir los tests (deben fallar primero)**
 
 Crear `mobile/src/lib/installments.test.ts`:
 
@@ -111,12 +111,12 @@ describe("calculateInstallmentSchedule", () => {
 });
 ```
 
-- [ ] **Step 4: Correr los tests y verificar que fallan**
+- [x] **Step 4: Correr los tests y verificar que fallan**
 
 Run: `cd mobile && npm test`
 Expected: FAIL — `Cannot find module './installments'` (el archivo `installments.ts` todavía no existe).
 
-- [ ] **Step 5: Implementar `calculateInstallmentSchedule`**
+- [x] **Step 5: Implementar `calculateInstallmentSchedule`**
 
 Crear `mobile/src/lib/installments.ts`:
 
@@ -175,12 +175,12 @@ export function calculateInstallmentSchedule(
 }
 ```
 
-- [ ] **Step 6: Correr los tests y verificar que pasan**
+- [x] **Step 6: Correr los tests y verificar que pasan**
 
 Run: `cd mobile && npm test`
 Expected: PASS — 5 tests, 0 failures.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd mobile
@@ -201,7 +201,7 @@ git commit -m "feat: calcular cronograma de cuotas de tarjeta de crédito"
 - Consumes: nada nuevo de otras tareas.
 - Produces: `PendingTransactionInput.totalInstallments: number | null` y `PendingTransactionRow.total_installments: number | null`. Usado por Task 3 (`sync.ts`) y Task 4 (`QuickAddExpenseSheet.tsx`).
 
-- [ ] **Step 1: Agregar la columna `total_installments` a `pending_transactions`**
+- [x] **Step 1: Agregar la columna `total_installments` a `pending_transactions`**
 
 En `mobile/src/lib/localDb.ts`, dentro de `openAndMigrate` (después del `db.execAsync` que crea las tablas, antes del `return db;`):
 
@@ -250,7 +250,7 @@ async function openAndMigrate(): Promise<LocalDb> {
 }
 ```
 
-- [ ] **Step 2: Extender `PendingTransactionInput` y `enqueuePendingTransaction`**
+- [x] **Step 2: Extender `PendingTransactionInput` y `enqueuePendingTransaction`**
 
 Reemplazar la interfaz y función actuales:
 
@@ -291,7 +291,7 @@ export async function enqueuePendingTransaction(input: PendingTransactionInput):
 }
 ```
 
-- [ ] **Step 3: Extender `PendingTransactionRow`**
+- [x] **Step 3: Extender `PendingTransactionRow`**
 
 ```ts
 export interface PendingTransactionRow {
@@ -310,12 +310,12 @@ export interface PendingTransactionRow {
 }
 ```
 
-- [ ] **Step 4: Verificar tipos**
+- [x] **Step 4: Verificar tipos**
 
 Run: `cd mobile && npx tsc --noEmit`
 Expected: sin errores nuevos (los llamadores de `enqueuePendingTransaction`/`enqueuePendingTransaction` todavía no pasan `totalInstallments` — eso se corrige en Task 4; hasta entonces es esperable un error de tipo en `QuickAddExpenseSheet.tsx` marcando que falta la propiedad `totalInstallments`. Confirmar que ese es el único archivo con error nuevo).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd mobile
@@ -334,7 +334,7 @@ git commit -m "feat: soportar cantidad de cuotas en la cola local de gastos pend
 - Consumes: `calculateInstallmentSchedule` de Task 1 (`./installments`); `PendingTransactionRow.total_installments` de Task 2.
 - Produces: nada nuevo consumido por otras tareas — es el punto final de la cadena de sync.
 
-- [ ] **Step 1: Importar la función de cálculo**
+- [x] **Step 1: Importar la función de cálculo**
 
 En `mobile/src/lib/sync.ts`, agregar el import junto a los existentes:
 
@@ -342,7 +342,7 @@ En `mobile/src/lib/sync.ts`, agregar el import junto a los existentes:
 import { calculateInstallmentSchedule } from "./installments";
 ```
 
-- [ ] **Step 2: Capturar el id de la transacción insertada y generar las cuotas**
+- [x] **Step 2: Capturar el id de la transacción insertada y generar las cuotas**
 
 Reemplazar el bloque del insert de `transactions` en `pushPendingTransactions` (dentro del `for (const tx of pending)`):
 
@@ -395,12 +395,12 @@ Reemplazar el bloque del insert de `transactions` en `pushPendingTransactions` (
 
 Este bloque reemplaza por completo el `insert` original (que no capturaba el id) y todo lo que iba desde ahí hasta el `synced += 1;` final del loop.
 
-- [ ] **Step 3: Verificar tipos**
+- [x] **Step 3: Verificar tipos**
 
 Run: `cd mobile && npx tsc --noEmit`
 Expected: sin errores nuevos en `sync.ts`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd mobile
@@ -419,7 +419,7 @@ git commit -m "feat: generar cronograma de cuotas al sincronizar gastos con tarj
 - Consumes: `PendingTransactionInput.totalInstallments` de Task 2.
 - Produces: nada consumido por otras tareas (es la punta de la UI).
 
-- [ ] **Step 1: Agregar la constante de opciones y el estado nuevo**
+- [x] **Step 1: Agregar la constante de opciones y el estado nuevo**
 
 Agregar arriba del componente, después de los imports:
 
@@ -444,7 +444,7 @@ const emptyState = {
 };
 ```
 
-- [ ] **Step 2: Resetear cuotas al cambiar de método de pago**
+- [x] **Step 2: Resetear cuotas al cambiar de método de pago**
 
 Reemplazar el `onPress` de los pills de `PAYMENT_METHODS`:
 
@@ -466,7 +466,7 @@ Reemplazar el `onPress` de los pills de `PAYMENT_METHODS`:
 
 (el resto del `Pressable` — `Text` interno — queda igual)
 
-- [ ] **Step 3: Agregar la sub-sección de cuotas**
+- [x] **Step 3: Agregar la sub-sección de cuotas**
 
 Insertar este bloque JSX inmediatamente después del `paymentRow` (View con los pills de método de pago) y antes de `actionsRow`:
 
@@ -522,7 +522,7 @@ Insertar este bloque JSX inmediatamente después del `paymentRow` (View con los 
 )}
 ```
 
-- [ ] **Step 4: Agregar el estilo `installmentsSection`**
+- [x] **Step 4: Agregar el estilo `installmentsSection`**
 
 En el `StyleSheet.create` al final del archivo, agregar:
 
@@ -530,7 +530,7 @@ En el `StyleSheet.create` al final del archivo, agregar:
 installmentsSection: { gap: 8 },
 ```
 
-- [ ] **Step 5: Actualizar `canSave` y `handleSave`**
+- [x] **Step 5: Actualizar `canSave` y `handleSave`**
 
 Reemplazar:
 
@@ -569,18 +569,18 @@ async function handleSave() {
 }
 ```
 
-- [ ] **Step 6: Verificar tipos**
+- [x] **Step 6: Verificar tipos**
 
 Run: `cd mobile && npx tsc --noEmit`
 Expected: 0 errores (el error de `totalInstallments` faltante de la Task 2 queda resuelto).
 
-- [ ] **Step 7: Verificación manual en el dev server**
+- [x] **Step 7: Verificación manual en el dev server**
 
 Run: `cd mobile && npm run web`
 En el navegador: abrir el Quick Add (`+ Gasto`), tocar el pill "Crédito" → debe aparecer la sub-sección "¿En cuántas cuotas?" con los pills 3/6/9/12/18/24 y "Otra". Tocar "Otra" → debe aparecer un input numérico. Cambiar el método de pago a "Efectivo" → la sub-sección debe desaparecer. Con "Crédito" seleccionado y sin elegir cuotas, el botón "Guardar" debe quedar deshabilitado; al elegir una cantidad, se habilita.
 Expected: comportamiento descrito se cumple visualmente.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 cd mobile
@@ -601,12 +601,12 @@ git commit -m "feat: capturar cantidad de cuotas al cargar un gasto con tarjeta 
 - Consumes: `Installment` type de `mobile/src/types/index.ts` (ya existe, sin cambios); `supabase` client de `mobile/src/lib/supabase.ts`.
 - Produces: `InstallmentsScreen({ userId }: { userId: string })`, componente React default export nombrado, consumido por `App.tsx`.
 
-- [ ] **Step 1: Instalar React Navigation**
+- [x] **Step 1: Instalar React Navigation**
 
 Run: `cd mobile && npx expo install @react-navigation/native react-native-screens react-native-safe-area-context @react-navigation/bottom-tabs`
 Expected: `mobile/package.json` actualizado con las 4 dependencias en `dependencies` (no dev), versiones resueltas por Expo para SDK 57.
 
-- [ ] **Step 2: Crear `InstallmentsScreen`**
+- [x] **Step 2: Crear `InstallmentsScreen`**
 
 Crear `mobile/src/screens/InstallmentsScreen.tsx`:
 
@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 3: Wire la navegación por tabs en `App.tsx`**
+- [x] **Step 3: Wire la navegación por tabs en `App.tsx`**
 
 Reemplazar el contenido completo de `mobile/App.tsx`:
 
@@ -803,17 +803,17 @@ const styles = StyleSheet.create({
 });
 ```
 
-- [ ] **Step 4: Verificar tipos**
+- [x] **Step 4: Verificar tipos**
 
 Run: `cd mobile && npx tsc --noEmit`
 Expected: 0 errores.
 
-- [ ] **Step 5: Verificación manual en el dev server**
+- [x] **Step 5: Verificación manual en el dev server**
 
 Run: `cd mobile && npm run web`
 Expected: la app carga con una barra de tabs abajo ("Gastos" / "Cuotas"). La pestaña "Gastos" se ve y funciona igual que antes (FAB, lista, Quick Add). La pestaña "Cuotas" muestra "No tenés cuotas pendientes." (todavía no se cargó ningún gasto en cuotas).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd mobile
@@ -827,12 +827,12 @@ git commit -m "feat: agregar navegación por tabs y pantalla de cuotas pendiente
 
 **Files:** ninguno (solo verificación; si aparece algún bug se corrige en el archivo correspondiente y se commitea aparte).
 
-- [ ] **Step 1: Cargar un gasto en cuotas**
+- [x] **Step 1: Cargar un gasto en cuotas**
 
 Run: `cd mobile && npm run web` (si no sigue corriendo de la Task 5)
 En el navegador: loguearse (o registrarse) con un usuario de prueba. Tocar `+ Gasto`, ingresar monto `12000`, tipo "Gasto", producto "Notebook", tienda "Tienda X", método de pago "Crédito", cuotas "3", guardar.
 
-- [ ] **Step 2: Confirmar en Supabase que se creó la transacción y las 3 cuotas**
+- [x] **Step 2: Confirmar en Supabase que se creó la transacción y las 3 cuotas**
 
 Usar `mcp__supabase__execute_sql` contra el proyecto `pxqjejfqmeskgqjncfdi`:
 
@@ -846,12 +846,12 @@ order by i.installment_number;
 
 Expected: 3 filas. `amount_per_installment` de las 2 primeras = `4000`, la tercera = `4000` (12000/3 divide exacto). `due_date` de la cuota 1 = un mes después de la fecha de hoy (mismo día, salvo clamp de fin de mes). `status = 'pending'` en las 3.
 
-- [ ] **Step 3: Confirmar que la pestaña "Cuotas" muestra las 3 cuotas y el total correcto**
+- [x] **Step 3: Confirmar que la pestaña "Cuotas" muestra las 3 cuotas y el total correcto**
 
 En el navegador: ir a la pestaña "Cuotas".
 Expected: 3 filas "Notebook · Cuota N de 3 · vence DD/MM/AAAA" con monto `$4000.00` cada una, header "Total: $12000.00".
 
-- [ ] **Step 4: Marcar una cuota como pagada**
+- [x] **Step 4: Marcar una cuota como pagada**
 
 En el navegador: tocar "Marcar pagada" en la primera cuota.
 Expected: la fila desaparece de la lista inmediatamente y el total baja a `$8000.00`.
@@ -866,12 +866,12 @@ order by installment_number;
 
 Expected: la cuota 1 tiene `status = 'paid'`, las cuotas 2 y 3 siguen en `'pending'`.
 
-- [ ] **Step 5: Confirmar que el gasto no se duplicó en el dashboard**
+- [x] **Step 5: Confirmar que el gasto no se duplicó en el dashboard**
 
 En el navegador: ir a la pestaña "Gastos".
 Expected: aparece un único registro "Notebook" por `$12000.00` (el monto total de la compra, no una fila por cuota).
 
-- [ ] **Step 6: Limpiar los datos de prueba (opcional)**
+- [x] **Step 6: Limpiar los datos de prueba (opcional)**
 
 Run vía `mcp__supabase__execute_sql`:
 
