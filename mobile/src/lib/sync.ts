@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { getUnsyncedTransactions, markTransactionSynced, upsertCachedProduct } from "./localDb";
+import { calculateInstallmentSchedule } from "./installments";
 import type { PaymentMethod, Product, ProductUsualContext } from "../types";
 
 // Trae el catálogo de productos + su contexto habitual (tienda/método de pago más
@@ -60,19 +61,46 @@ export async function pushPendingTransactions(userId: string): Promise<{ synced:
       await upsertCachedProduct({ id: product.id, name: product.name, isEssential: product.is_essential });
     }
 
-    const { error: insertError } = await supabase.from("transactions").insert({
-      user_id: userId,
-      amount: tx.amount,
-      type: tx.type,
-      payment_method: tx.payment_method as PaymentMethod,
-      store_name: tx.store_name,
-      product_id: productId,
-      date: tx.date,
-    });
+    const { data: insertedTx, error: insertError } = await supabase
+      .from("transactions")
+      .insert({
+        user_id: userId,
+        amount: tx.amount,
+        type: tx.type,
+        payment_method: tx.payment_method as PaymentMethod,
+        store_name: tx.store_name,
+        product_id: productId,
+        date: tx.date,
+      })
+      .select("id")
+      .single<{ id: string }>();
 
-    if (insertError) {
+    if (insertError || !insertedTx) {
       failed += 1;
       continue;
+    }
+
+    if (tx.payment_method === "credit_card" && tx.total_installments && tx.total_installments > 1) {
+      const schedule = calculateInstallmentSchedule(tx.amount, tx.total_installments, new Date(tx.date));
+      const { error: installmentsError } = await supabase.from("installments").insert(
+        schedule.map((item) => ({
+          transaction_id: insertedTx.id,
+          user_id: userId,
+          installment_number: item.installment_number,
+          total_installments: item.total_installments,
+          amount_per_installment: item.amount_per_installment,
+          due_date: item.due_date,
+          status: "pending" as const,
+        })),
+      );
+
+      if (installmentsError) {
+        // Best-effort: la transacción ya se guardó y es la fuente de verdad
+        // para los totales. No reintentamos el cronograma para no arriesgar
+        // duplicar la transacción en un reintento (el insert de transactions
+        // no es idempotente).
+        console.warn("No se pudo generar el cronograma de cuotas:", installmentsError.message);
+      }
     }
 
     await markTransactionSynced(tx.local_id);
