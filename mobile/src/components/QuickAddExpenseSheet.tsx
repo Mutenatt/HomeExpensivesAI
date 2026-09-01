@@ -12,6 +12,7 @@ import {
 import { enqueuePendingTransaction } from "../lib/localDb";
 import { PAYMENT_METHODS } from "../lib/paymentMethods";
 import { searchCachedProducts, type ProductCacheRow } from "../lib/localDb";
+import { DateField } from "./DateField";
 import { colors, radius, spacing, typography } from "../theme";
 import type { PaymentMethod, TransactionType } from "../types";
 
@@ -34,6 +35,7 @@ const emptyState = {
   isEssential: false,
   installments: null as number | null,
   showCustomInstallmentsInput: false,
+  date: null as Date | null,
 };
 
 export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
@@ -86,7 +88,7 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
         productNameNew:
           !state.selectedProduct && state.productQuery.trim() ? state.productQuery.trim() : null,
         isEssential: state.isEssential,
-        date: new Date().toISOString(),
+        date: (state.date ?? new Date()).toISOString(),
         totalInstallments: needsInstallments ? state.installments : null,
       });
       reset();
@@ -122,6 +124,8 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
             value={state.amount}
             onChangeText={(text) => setState((s) => ({ ...s, amount: text }))}
           />
+
+          <DateField value={state.date} onChange={(date) => setState((s) => ({ ...s, date }))} />
 
           {state.type === "expense" && (
             <>

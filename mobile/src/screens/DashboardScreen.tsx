@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { QuickAddExpenseSheet } from "../components/QuickAddExpenseSheet";
+import { EditTransactionModal } from "../components/EditTransactionModal";
 import { Fab } from "../components/Fab";
 import { getUnsyncedTransactions } from "../lib/localDb";
 import { paymentMethodLabel } from "../lib/paymentMethods";
@@ -20,6 +21,7 @@ export function DashboardScreen({ userId }: Props) {
   const [transactions, setTransactions] = useState<TransactionWithProduct[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionWithProduct | null>(null);
 
   const refresh = useCallback(async () => {
     const { data } = await supabase
@@ -51,6 +53,11 @@ export function DashboardScreen({ userId }: Props) {
     await refresh();
   }
 
+  async function handleEditSaved() {
+    setEditingTransaction(null);
+    await refresh();
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -67,7 +74,10 @@ export function DashboardScreen({ userId }: Props) {
         renderItem={({ item }) => {
           const isIncome = item.type === "income";
           return (
-            <View style={[styles.row, isIncome ? styles.rowIncome : styles.rowExpense]}>
+            <Pressable
+              style={[styles.row, isIncome ? styles.rowIncome : styles.rowExpense]}
+              onPress={() => setEditingTransaction(item)}
+            >
               <View>
                 <Text style={styles.rowTitle}>
                   {item.product?.name ?? (isIncome ? "Ingreso" : "Gasto")}
@@ -80,7 +90,7 @@ export function DashboardScreen({ userId }: Props) {
               <Text style={[styles.rowAmount, isIncome ? styles.income : styles.expense]}>
                 {isIncome ? "+" : "-"}${item.amount.toFixed(2)}
               </Text>
-            </View>
+            </Pressable>
           );
         }}
         ListEmptyComponent={<Text style={styles.emptyText}>Todavía no registraste ningún gasto.</Text>}
@@ -92,6 +102,12 @@ export function DashboardScreen({ userId }: Props) {
         visible={sheetVisible}
         onClose={() => setSheetVisible(false)}
         onSaved={handleSaved}
+      />
+
+      <EditTransactionModal
+        transaction={editingTransaction}
+        onClose={() => setEditingTransaction(null)}
+        onSaved={handleEditSaved}
       />
     </View>
   );

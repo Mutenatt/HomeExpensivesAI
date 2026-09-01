@@ -29,7 +29,9 @@
     },
     "plugins": [
       "expo-sqlite",
-      "expo-notifications"
+      "expo-notifications",
+      "@react-native-community/datetimepicker",
+      "expo-web-browser"
     ]
   }
 }
