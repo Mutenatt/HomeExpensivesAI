@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web",
+  "buildCommand": "node -e \"const u=process.env.EXPO_PUBLIC_SUPABASE_URL||''; console.log('URL_LEN:', u.length, 'START:', JSON.stringify(u.slice(0,20)), 'END:', JSON.stringify(u.slice(-20)))\" && npx expo export --platform web",
   "outputDirectory": "dist",
   "installCommand": "npm install"
 }
