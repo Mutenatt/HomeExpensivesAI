@@ -12,6 +12,7 @@ import {
 import { enqueuePendingTransaction } from "../lib/localDb";
 import { PAYMENT_METHODS } from "../lib/paymentMethods";
 import { searchCachedProducts, type ProductCacheRow } from "../lib/localDb";
+import { colors, radius, spacing, typography } from "../theme";
 import type { PaymentMethod, TransactionType } from "../types";
 
 interface Props {
@@ -267,31 +268,44 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, gap: 12 },
-  typeRow: { flexDirection: "row", gap: 8 },
-  typePill: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "#eee" },
-  typePillActive: { backgroundColor: "#1f2937" },
-  typePillText: { color: "#1f2937", fontWeight: "600" },
+  backdrop: { flex: 1, backgroundColor: "rgba(76,58,45,0.35)", justifyContent: "flex-end" },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  typeRow: { flexDirection: "row", gap: spacing.sm },
+  typePill: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: colors.borderSubtle },
+  typePillActive: { backgroundColor: colors.textPrimary },
+  typePillText: { ...typography.bodySm, color: colors.textPrimary, fontWeight: "600" },
   typePillTextActive: { color: "#fff" },
-  amountInput: { fontSize: 36, fontWeight: "700", paddingVertical: 8 },
-  input: { borderWidth: 1, borderColor: "#ddd", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  suggestionsBox: { maxHeight: 160, borderWidth: 1, borderColor: "#eee", borderRadius: 10 },
-  suggestionRow: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#f2f2f2" },
-  suggestionText: { fontSize: 15, fontWeight: "500" },
-  suggestionSubtext: { fontSize: 12, color: "#888" },
+  amountInput: { ...typography.displayXl, paddingVertical: spacing.xs, color: colors.textPrimary },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.textPrimary,
+  },
+  suggestionsBox: { maxHeight: 160, borderWidth: 1, borderColor: colors.borderSubtle, borderRadius: radius.md },
+  suggestionRow: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle },
+  suggestionText: { ...typography.bodyMd, color: colors.textPrimary },
+  suggestionSubtext: { ...typography.bodySm, fontSize: 12, color: colors.textSecondary },
   essentialRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  essentialLabel: { fontSize: 14, color: "#333" },
-  paymentRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  installmentsSection: { gap: 8 },
-  paymentPill: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, backgroundColor: "#eee" },
-  paymentPillActive: { backgroundColor: "#2563eb" },
-  paymentPillText: { color: "#1f2937", fontSize: 13 },
+  essentialLabel: { ...typography.bodySm, color: colors.textPrimary },
+  paymentRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  installmentsSection: { gap: spacing.sm },
+  paymentPill: { paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.borderSubtle },
+  paymentPillActive: { backgroundColor: colors.negative },
+  paymentPillText: { color: colors.textPrimary, fontSize: 13 },
   paymentPillTextActive: { color: "#fff" },
-  actionsRow: { flexDirection: "row", gap: 12, marginTop: 8 },
-  cancelButton: { flex: 1, padding: 14, alignItems: "center", borderRadius: 10, backgroundColor: "#f3f4f6" },
-  cancelButtonText: { color: "#1f2937", fontWeight: "600" },
-  saveButton: { flex: 2, padding: 14, alignItems: "center", borderRadius: 10, backgroundColor: "#16a34a" },
-  saveButtonDisabled: { backgroundColor: "#9ca3af" },
+  actionsRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.xs },
+  cancelButton: { flex: 1, padding: spacing.md, alignItems: "center", borderRadius: radius.md, backgroundColor: colors.borderSubtle },
+  cancelButtonText: { color: colors.textPrimary, fontWeight: "600" },
+  saveButton: { flex: 2, padding: spacing.md, alignItems: "center", borderRadius: radius.md, backgroundColor: colors.positive },
+  saveButtonDisabled: { backgroundColor: colors.textSecondary },
   saveButtonText: { color: "#fff", fontWeight: "700" },
 });

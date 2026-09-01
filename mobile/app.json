@@ -19,7 +19,13 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "HomeExpensivesAI",
+      "shortName": "Gastos",
+      "themeColor": "#FDF6EE",
+      "backgroundColor": "#FDF6EE",
+      "display": "standalone",
+      "output": "single"
     },
     "plugins": [
       "expo-sqlite",

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { QuickAddExpenseSheet } from "../components/QuickAddExpenseSheet";
+import { Fab } from "../components/Fab";
 import { supabase } from "../lib/supabase";
+import { colors, radius, shadows, spacing, typography } from "../theme";
 import type { Installment } from "../types";
 
 interface Props {
@@ -19,6 +22,7 @@ function formatDueDate(dueDate: string): string {
 export function InstallmentsScreen({ userId }: Props) {
   const [installments, setInstallments] = useState<InstallmentWithTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const refresh = useCallback(async () => {
     const { data } = await supabase
@@ -46,6 +50,11 @@ export function InstallmentsScreen({ userId }: Props) {
     if (error) {
       await refresh();
     }
+  }
+
+  async function handleSaved() {
+    setSheetVisible(false);
+    await refresh();
   }
 
   const total = installments.reduce((sum, item) => sum + item.amount_per_installment, 0);
@@ -84,35 +93,45 @@ export function InstallmentsScreen({ userId }: Props) {
           !loading ? <Text style={styles.emptyText}>No tenés cuotas pendientes.</Text> : null
         }
       />
+
+      <Fab onPress={() => setSheetVisible(true)} />
+
+      <QuickAddExpenseSheet
+        visible={sheetVisible}
+        onClose={() => setSheetVisible(false)}
+        onSaved={handleSaved}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 12 },
-  headerTitle: { fontSize: 24, fontWeight: "700" },
-  headerTotal: { fontSize: 15, color: "#888", marginTop: 4 },
-  listContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: colors.bgBase },
+  header: { paddingTop: 60, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  headerTitle: { ...typography.headingMd, fontSize: 24, color: colors.textPrimary },
+  headerTotal: { ...typography.bodySm, color: colors.textSecondary, marginTop: 4 },
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: 160, gap: spacing.sm },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f2f2f2",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    ...shadows.soft,
   },
-  rowInfo: { flex: 1, paddingRight: 12 },
-  rowTitle: { fontSize: 16, fontWeight: "600" },
-  rowSubtitle: { fontSize: 13, color: "#888", marginTop: 2 },
-  rowActions: { alignItems: "flex-end", gap: 6 },
-  rowAmount: { fontSize: 16, fontWeight: "700" },
+  rowInfo: { flex: 1, paddingRight: spacing.md },
+  rowTitle: { ...typography.bodyMd, color: colors.textPrimary, fontWeight: "700" },
+  rowSubtitle: { ...typography.bodySm, color: colors.textSecondary, marginTop: 2 },
+  rowActions: { alignItems: "flex-end", gap: spacing.xs },
+  rowAmount: { ...typography.bodyMd, color: colors.textPrimary, fontWeight: "700" },
   payButton: {
-    backgroundColor: "#16a34a",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    backgroundColor: colors.positive,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.sm,
   },
-  payButtonText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  emptyText: { textAlign: "center", color: "#888", marginTop: 40 },
+  payButtonText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  emptyText: { ...typography.bodySm, textAlign: "center", color: colors.textSecondary, marginTop: 40 },
 });
