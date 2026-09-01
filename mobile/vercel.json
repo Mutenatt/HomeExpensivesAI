@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node -e \"console.log('URL_SET:', !!process.env.EXPO_PUBLIC_SUPABASE_URL, 'URL_LEN:', (process.env.EXPO_PUBLIC_SUPABASE_URL||'').length, 'KEY_SET:', !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)\" && npx expo export --platform web",
+  "buildCommand": "npx expo export --platform web",
   "outputDirectory": "dist",
   "installCommand": "npm install"
 }
