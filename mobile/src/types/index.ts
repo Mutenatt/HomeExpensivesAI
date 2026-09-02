@@ -28,6 +28,10 @@ export interface Transaction {
   deleted_at: string | null;
 }
 
+export type TransactionWithProduct = Transaction & {
+  product: { name: string; is_essential: boolean } | null;
+};
+
 export interface Installment {
   id: string;
   transaction_id: string;

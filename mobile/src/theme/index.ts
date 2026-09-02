@@ -11,6 +11,10 @@ export const colors = {
   warning: '#F2A65A',
   accentGradientStart: '#F2A65A',
   accentGradientEnd: '#E2685A',
+  essential: '#2E86AB',
+  essentialSurface: '#E2F0F6',
+  nonEssential: '#8E6FB8',
+  nonEssentialSurface: '#EFE7F7',
 };
 
 export const spacing = {

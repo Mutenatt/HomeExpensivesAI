@@ -24,7 +24,7 @@ const Drawer = createDrawerNavigator();
 function AppTabs({ userId }: { userId: string }) {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={(props) => <PillTabBar {...props} />}>
-      <Tab.Screen name="Resumen">{() => <ResumenScreen />}</Tab.Screen>
+      <Tab.Screen name="Resumen">{() => <ResumenScreen userId={userId} />}</Tab.Screen>
       <Tab.Screen name="Gastos">{() => <DashboardScreen userId={userId} />}</Tab.Screen>
       <Tab.Screen name="Cuotas">{() => <InstallmentsScreen userId={userId} />}</Tab.Screen>
     </Tab.Navigator>
