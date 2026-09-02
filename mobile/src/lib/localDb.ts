@@ -1,5 +1,5 @@
 import * as SQLite from "expo-sqlite";
-import type { PaymentMethod } from "../types";
+import type { Currency, PaymentMethod } from "../types";
 
 const DB_NAME = "homeexpenses.db";
 
@@ -50,6 +50,12 @@ async function openAndMigrate(): Promise<LocalDb> {
   // (instalaciones previas de la app), el ALTER falla y se ignora ese error.
   try {
     await db.execAsync(`ALTER TABLE pending_transactions ADD COLUMN total_installments INTEGER;`);
+  } catch {
+    // columna ya presente, no-op
+  }
+
+  try {
+    await db.execAsync(`ALTER TABLE pending_transactions ADD COLUMN currency TEXT NOT NULL DEFAULT 'ARS';`);
   } catch {
     // columna ya presente, no-op
   }
@@ -116,6 +122,7 @@ export interface PendingTransactionInput {
   amount: number;
   type: "income" | "expense";
   paymentMethod: PaymentMethod;
+  currency: Currency;
   storeName: string | null;
   productId: string | null;
   productNameNew: string | null;
@@ -128,13 +135,14 @@ export async function enqueuePendingTransaction(input: PendingTransactionInput):
   const db = await getLocalDb();
   await db.runAsync(
     `INSERT INTO pending_transactions
-       (local_id, amount, type, payment_method, store_name, product_id, product_name_new, is_essential, date, created_at, synced, total_installments)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+       (local_id, amount, type, payment_method, currency, store_name, product_id, product_name_new, is_essential, date, created_at, synced, total_installments)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
     [
       input.localId,
       input.amount,
       input.type,
       input.paymentMethod,
+      input.currency,
       input.storeName,
       input.productId,
       input.productNameNew,
@@ -151,6 +159,7 @@ export interface PendingTransactionRow {
   amount: number;
   type: "income" | "expense";
   payment_method: PaymentMethod;
+  currency: Currency;
   store_name: string | null;
   product_id: string | null;
   product_name_new: string | null;
