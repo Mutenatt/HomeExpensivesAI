@@ -68,6 +68,7 @@ export async function pushPendingTransactions(userId: string): Promise<{ synced:
         amount: tx.amount,
         type: tx.type,
         payment_method: tx.payment_method as PaymentMethod,
+        currency: tx.currency,
         store_name: tx.store_name,
         product_id: productId,
         date: tx.date,
