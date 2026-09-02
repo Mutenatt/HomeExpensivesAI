@@ -155,7 +155,7 @@ export function DashboardScreen({ userId }: Props) {
                   </View>
                   <Text style={[styles.rowAmount, isIncome ? styles.income : styles.expense]}>
                     {isIncome ? "+" : "-"}
-                    {formatCurrency(item.amount)}
+                    {formatCurrency(item.amount, item.currency)}
                   </Text>
                 </Pressable>
               );
