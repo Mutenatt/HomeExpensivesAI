@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, SectionList, StyleSheet, Text, View } from "react-native";
+import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { QuickAddExpenseSheet } from "../components/QuickAddExpenseSheet";
 import { EditTransactionModal } from "../components/EditTransactionModal";
-import { ExpenseListToggle, type ExpenseListMode } from "../components/ExpenseListToggle";
 import { Fab } from "../components/Fab";
 import { MonthSelector } from "../components/MonthSelector";
 import { getUnsyncedTransactions } from "../lib/localDb";
 import { paymentMethodLabel } from "../lib/paymentMethods";
 import { registerForPushNotifications } from "../lib/notifications";
-import { supabase } from "../lib/supabase";
 import { pullProductCatalog, pushPendingTransactions } from "../lib/sync";
 import { getMonthRange, formatArtTime } from "../lib/dateRange";
 import { fetchTransactionsForMonth } from "../lib/resumen";
@@ -36,9 +34,6 @@ function rowIcon(item: TransactionWithProduct): {
 }
 
 export function DashboardScreen({ userId }: Props) {
-  const [mode, setMode] = useState<ExpenseListMode>("corriente");
-
-  const [transactions, setTransactions] = useState<TransactionWithProduct[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
 
   const [monthOffset, setMonthOffset] = useState(0);
@@ -52,20 +47,14 @@ export function DashboardScreen({ userId }: Props) {
   const monthLabel = useMemo(() => getMonthRange(monthOffset).label, [monthOffset]);
   const isCurrentMonth = monthOffset === 0;
 
-  const refresh = useCallback(async () => {
-    const { data } = await supabase
-      .from("transactions")
-      .select("*, product:products(name, is_essential)")
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .order("date", { ascending: false })
-      .limit(30)
-      .returns<TransactionWithProduct[]>();
-    setTransactions(data ?? []);
-
-    const pending = await getUnsyncedTransactions();
-    setPendingCount(pending.length);
-  }, [userId]);
+  const refreshPendingCount = useCallback(async () => {
+    try {
+      const pending = await getUnsyncedTransactions();
+      setPendingCount(pending.length);
+    } catch {
+      setPendingCount(0);
+    }
+  }, []);
 
   const loadCorriente = useCallback(async () => {
     setCorrienteLoading(true);
@@ -85,9 +74,9 @@ export function DashboardScreen({ userId }: Props) {
       await pullProductCatalog(userId).catch(() => {});
       await pushPendingTransactions(userId).catch(() => {});
       await registerForPushNotifications(userId).catch(() => {});
-      await refresh();
+      await refreshPendingCount();
     })();
-  }, [userId, refresh]);
+  }, [userId, refreshPendingCount]);
 
   useEffect(() => {
     loadCorriente();
@@ -96,13 +85,13 @@ export function DashboardScreen({ userId }: Props) {
   async function handleSaved() {
     setSheetVisible(false);
     await pushPendingTransactions(userId).catch(() => {});
-    await refresh();
+    await refreshPendingCount();
     await loadCorriente();
   }
 
   async function handleEditSaved() {
     setEditingTransaction(null);
-    await refresh();
+    await refreshPendingCount();
     await loadCorriente();
   }
 
@@ -113,82 +102,46 @@ export function DashboardScreen({ userId }: Props) {
         {pendingCount > 0 && (
           <Text style={styles.pendingBadge}>{pendingCount} sin sincronizar</Text>
         )}
-        <View style={styles.toggleRow}>
-          <ExpenseListToggle value={mode} onChange={setMode} />
-        </View>
       </View>
 
-      {mode === "corriente" ? (
-        <>
-          <View style={styles.monthSelectorRow}>
-            <MonthSelector
-              label={monthLabel}
-              onPrev={() => setMonthOffset((m) => m - 1)}
-              onNext={() => setMonthOffset((m) => Math.min(m + 1, 0))}
-              disableNext={isCurrentMonth}
-            />
-          </View>
+      <View style={styles.monthSelectorRow}>
+        <MonthSelector
+          label={monthLabel}
+          onPrev={() => setMonthOffset((m) => m - 1)}
+          onNext={() => setMonthOffset((m) => Math.min(m + 1, 0))}
+          disableNext={isCurrentMonth}
+        />
+      </View>
 
-          {corrienteError ? (
-            <View style={styles.stateBox}>
-              <Text style={styles.emptyText}>No pudimos cargar los movimientos.</Text>
-              <Pressable style={styles.retryButton} onPress={loadCorriente}>
-                <Text style={styles.retryText}>Reintentar</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <SectionList
-              sections={sections}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContent}
-              renderSectionHeader={({ section }) => (
-                <Text style={styles.sectionHeader}>{section.title}</Text>
-              )}
-              renderItem={({ item }) => {
-                const isIncome = item.type === "income";
-                const icon = rowIcon(item);
-                return (
-                  <Pressable style={styles.corrienteRow} onPress={() => setEditingTransaction(item)}>
-                    <Text style={styles.rowTime}>{formatArtTime(item.date)}</Text>
-                    <View style={[styles.iconCircle, { backgroundColor: icon.bg }]}>
-                      <Ionicons name={icon.name} size={18} color={icon.tint} />
-                    </View>
-                    <View style={styles.rowBody}>
-                      <Text style={styles.rowTitle}>
-                        {item.product?.name ?? (isIncome ? "Ingreso" : "Gasto")}
-                      </Text>
-                      <Text style={styles.rowSubtitle}>
-                        {item.store_name ? `${item.store_name} · ` : ""}
-                        {paymentMethodLabel(item.payment_method)}
-                      </Text>
-                    </View>
-                    <Text style={[styles.rowAmount, isIncome ? styles.income : styles.expense]}>
-                      {isIncome ? "+" : "-"}${item.amount.toFixed(2)}
-                    </Text>
-                  </Pressable>
-                );
-              }}
-              ListEmptyComponent={
-                !corrienteLoading ? (
-                  <Text style={styles.emptyText}>Todavía no registraste gastos este mes.</Text>
-                ) : null
-              }
-            />
-          )}
-        </>
+      {corrienteLoading ? (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyText}>Cargando...</Text>
+        </View>
+      ) : corrienteError ? (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyText}>No pudimos cargar los movimientos.</Text>
+          <Pressable style={styles.retryButton} onPress={loadCorriente}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
+        </View>
       ) : (
-        <FlatList
-          data={transactions}
+        <SectionList
+          sections={sections}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
+          renderSectionHeader={({ section }) => (
+            <Text style={styles.sectionHeader}>{section.title}</Text>
+          )}
           renderItem={({ item }) => {
             const isIncome = item.type === "income";
+            const icon = rowIcon(item);
             return (
-              <Pressable
-                style={[styles.row, isIncome ? styles.rowIncome : styles.rowExpense]}
-                onPress={() => setEditingTransaction(item)}
-              >
-                <View>
+              <Pressable style={styles.corrienteRow} onPress={() => setEditingTransaction(item)}>
+                <Text style={styles.rowTime}>{formatArtTime(item.date)}</Text>
+                <View style={[styles.iconCircle, { backgroundColor: icon.bg }]}>
+                  <Ionicons name={icon.name} size={18} color={icon.tint} />
+                </View>
+                <View style={styles.rowBody}>
                   <Text style={styles.rowTitle}>
                     {item.product?.name ?? (isIncome ? "Ingreso" : "Gasto")}
                   </Text>
@@ -203,7 +156,9 @@ export function DashboardScreen({ userId }: Props) {
               </Pressable>
             );
           }}
-          ListEmptyComponent={<Text style={styles.emptyText}>Todavía no registraste ningún gasto.</Text>}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Todavía no registraste gastos este mes.</Text>
+          }
         />
       )}
 
@@ -226,10 +181,9 @@ export function DashboardScreen({ userId }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgBase },
-  header: { paddingTop: 60, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.sm },
+  header: { paddingTop: 60, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.xs },
   headerTitle: { ...typography.headingMd, fontSize: 24, color: colors.textPrimary },
   pendingBadge: { ...typography.bodySm, color: colors.warning },
-  toggleRow: { marginTop: spacing.xs },
   monthSelectorRow: { alignItems: "center", paddingBottom: spacing.sm },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: 160, gap: spacing.sm },
   sectionHeader: {
@@ -239,17 +193,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.xs,
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    ...shadows.soft,
-  },
-  rowIncome: { backgroundColor: colors.positiveSurface },
-  rowExpense: { backgroundColor: colors.negativeSurface },
   corrienteRow: {
     flexDirection: "row",
     alignItems: "center",

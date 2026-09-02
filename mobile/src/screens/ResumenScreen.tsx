@@ -29,13 +29,25 @@ export function ResumenScreen({ userId }: Props) {
     try {
       const data = await fetchTransactionsForMonth(userId, monthOffset);
       setRows(data);
-      const pending = isCurrentMonth ? await getUnsyncedTransactions() : [];
-      setPendingCount(pending.length);
     } catch {
       setError(true);
-    } finally {
       setLoading(false);
+      return;
     }
+
+    // El conteo de "sin sincronizar" es secundario (cola local de SQLite):
+    // si falla, no debe tirar abajo el resumen que ya cargó bien.
+    if (isCurrentMonth) {
+      try {
+        const pending = await getUnsyncedTransactions();
+        setPendingCount(pending.length);
+      } catch {
+        setPendingCount(0);
+      }
+    } else {
+      setPendingCount(0);
+    }
+    setLoading(false);
   }, [userId, monthOffset, isCurrentMonth]);
 
   useEffect(() => {
@@ -58,14 +70,18 @@ export function ResumenScreen({ userId }: Props) {
           disableNext={isCurrentMonth}
         />
 
-        {error ? (
+        {loading ? (
+          <View style={styles.stateBox}>
+            <Text style={styles.stateText}>Cargando...</Text>
+          </View>
+        ) : error ? (
           <View style={styles.stateBox}>
             <Text style={styles.stateText}>No pudimos cargar el resumen.</Text>
             <Pressable style={styles.retryButton} onPress={load}>
               <Text style={styles.retryText}>Reintentar</Text>
             </Pressable>
           </View>
-        ) : !loading && rows.length === 0 ? (
+        ) : rows.length === 0 ? (
           <View style={styles.stateBox}>
             <Text style={styles.stateText}>Todavía no registraste gastos este mes.</Text>
           </View>
