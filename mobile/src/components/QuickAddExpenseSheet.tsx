@@ -14,7 +14,7 @@ import { PAYMENT_METHODS } from "../lib/paymentMethods";
 import { searchCachedProducts, type ProductCacheRow } from "../lib/localDb";
 import { DateField } from "./DateField";
 import { colors, radius, spacing, typography } from "../theme";
-import type { PaymentMethod, TransactionType } from "../types";
+import type { Currency, PaymentMethod, TransactionType } from "../types";
 
 interface Props {
   visible: boolean;
@@ -27,6 +27,7 @@ const INSTALLMENT_OPTIONS = [3, 6, 9, 12, 18, 24];
 const emptyState = {
   amount: "",
   type: "expense" as TransactionType,
+  currency: "ARS" as Currency,
   productQuery: "",
   suggestions: [] as ProductCacheRow[],
   selectedProduct: null as ProductCacheRow | null,
@@ -83,11 +84,12 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
         amount: parsedAmount,
         type: state.type,
         paymentMethod: state.paymentMethod,
+        currency: state.currency,
         storeName: state.storeName.trim() || null,
         productId: state.selectedProduct?.id ?? null,
         productNameNew:
           !state.selectedProduct && state.productQuery.trim() ? state.productQuery.trim() : null,
-        isEssential: state.isEssential,
+        isEssential: state.currency === "USD" ? false : state.isEssential,
         date: (state.date ?? new Date()).toISOString(),
         totalInstallments: needsInstallments ? state.installments : null,
       });
@@ -118,12 +120,26 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
 
           <TextInput
             style={styles.amountInput}
-            placeholder="$ 0"
+            placeholder={state.currency === "USD" ? "US$ 0" : "$ 0"}
             keyboardType="decimal-pad"
             autoFocus
             value={state.amount}
             onChangeText={(text) => setState((s) => ({ ...s, amount: text }))}
           />
+
+          <View style={styles.essentialRow}>
+            <Text style={styles.essentialLabel}>USD</Text>
+            <Switch
+              value={state.currency === "USD"}
+              onValueChange={(value) =>
+                setState((s) => ({
+                  ...s,
+                  currency: value ? "USD" : "ARS",
+                  isEssential: value ? false : s.isEssential,
+                }))
+              }
+            />
+          </View>
 
           <DateField value={state.date} onChange={(date) => setState((s) => ({ ...s, date }))} />
 
@@ -161,13 +177,15 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
                 onChangeText={(text) => setState((s) => ({ ...s, storeName: text }))}
               />
 
-              <View style={styles.essentialRow}>
-                <Text style={styles.essentialLabel}>Esencial (canasta básica)</Text>
-                <Switch
-                  value={state.isEssential}
-                  onValueChange={(value) => setState((s) => ({ ...s, isEssential: value }))}
-                />
-              </View>
+              {state.currency === "ARS" && (
+                <View style={styles.essentialRow}>
+                  <Text style={styles.essentialLabel}>Esencial (canasta básica)</Text>
+                  <Switch
+                    value={state.isEssential}
+                    onValueChange={(value) => setState((s) => ({ ...s, isEssential: value }))}
+                  />
+                </View>
+              )}
             </>
           )}
 
