@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { DateField } from "./DateField";
 import { supabase } from "../lib/supabase";
 import { PAYMENT_METHODS } from "../lib/paymentMethods";
 import { colors, radius, spacing, typography } from "../theme";
-import type { PaymentMethod, Transaction, TransactionType } from "../types";
+import type { Currency, PaymentMethod, Transaction, TransactionType } from "../types";
 
 interface Props {
   transaction: (Transaction & { product: { name: string } | null }) | null;
@@ -15,6 +15,7 @@ interface Props {
 export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<TransactionType>("expense");
+  const [currency, setCurrency] = useState<Currency>("ARS");
   const [storeName, setStoreName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [date, setDate] = useState<Date | null>(null);
@@ -25,6 +26,7 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
     if (!transaction) return;
     setAmount(String(transaction.amount));
     setType(transaction.type);
+    setCurrency(transaction.currency);
     setStoreName(transaction.store_name ?? "");
     setPaymentMethod(transaction.payment_method);
     setDate(new Date(transaction.date));
@@ -45,6 +47,7 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
         .update({
           amount: parsedAmount,
           type,
+          currency,
           store_name: storeName.trim() || null,
           payment_method: paymentMethod,
           date: (date ?? new Date()).toISOString(),
@@ -104,6 +107,14 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
             value={amount}
             onChangeText={setAmount}
           />
+
+          <View style={styles.currencyRow}>
+            <Text style={styles.currencyLabel}>USD</Text>
+            <Switch
+              value={currency === "USD"}
+              onValueChange={(value) => setCurrency(value ? "USD" : "ARS")}
+            />
+          </View>
 
           <DateField value={date} onChange={setDate} />
 
@@ -190,6 +201,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     color: colors.textPrimary,
   },
+  currencyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  currencyLabel: { ...typography.bodySm, color: colors.textPrimary },
   paymentRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   paymentPill: { paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.borderSubtle },
   paymentPillActive: { backgroundColor: colors.negative },
