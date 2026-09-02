@@ -14,6 +14,7 @@ function makeRow(overrides: Partial<TransactionWithProduct>): TransactionWithPro
     amount: 0,
     type: "expense",
     payment_method: "cash",
+    currency: "ARS",
     store_name: null,
     product_id: null,
     date: "2026-09-02T12:00:00Z",

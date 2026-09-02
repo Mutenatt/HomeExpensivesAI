@@ -1,5 +1,7 @@
 export type TransactionType = "income" | "expense";
 
+export type Currency = "ARS" | "USD";
+
 export type PaymentMethod =
   | "cash"
   | "debit_card"
@@ -21,6 +23,7 @@ export interface Transaction {
   amount: number;
   type: TransactionType;
   payment_method: PaymentMethod;
+  currency: Currency;
   store_name: string | null;
   product_id: string | null;
   date: string;

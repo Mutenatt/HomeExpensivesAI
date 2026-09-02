@@ -8,6 +8,7 @@ function makeRow(id: string, date: string): TransactionWithProduct {
     amount: 100,
     type: "expense",
     payment_method: "cash",
+    currency: "ARS",
     store_name: null,
     product_id: null,
     date,
