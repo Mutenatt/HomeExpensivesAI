@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { EssentialDonutChart } from "../components/EssentialDonutChart";
 import { MonthSelector } from "../components/MonthSelector";
 import { MonthTotalCounter } from "../components/MonthTotalCounter";
@@ -54,6 +56,15 @@ export function ResumenScreen({ userId }: Props) {
     load();
   }, [load]);
 
+  // Vuelve a disparar la animación del contador y del donut cada vez que se
+  // entra a esta pestaña (no solo la primera vez o al cambiar de mes).
+  const [visitKey, setVisitKey] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setVisitKey((k) => k + 1);
+    }, []),
+  );
+
   const split = useMemo(() => aggregateEssentialSplit(rows), [rows]);
 
   return (
@@ -86,7 +97,11 @@ export function ResumenScreen({ userId }: Props) {
             <Text style={styles.stateText}>Todavía no registraste gastos este mes.</Text>
           </View>
         ) : (
-          <>
+          <Animated.View
+            key={`${monthOffset}-${visitKey}`}
+            entering={FadeInDown.duration(350)}
+            style={styles.contentInner}
+          >
             <MonthTotalCounter total={split.totalExpense} isCurrentMonth={isCurrentMonth} />
             {isCurrentMonth && pendingCount > 0 && (
               <Text style={styles.pendingBadge}>{pendingCount} sin sincronizar</Text>
@@ -97,7 +112,7 @@ export function ResumenScreen({ userId }: Props) {
                 totalNonEssential={split.totalNonEssential}
               />
             </View>
-          </>
+          </Animated.View>
         )}
       </ScrollView>
     </View>
@@ -115,6 +130,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pendingBadge: { ...typography.bodySm, color: colors.warning },
+  contentInner: { width: "100%", alignItems: "center", gap: spacing.lg },
   card: {
     width: "100%",
     backgroundColor: colors.surface,

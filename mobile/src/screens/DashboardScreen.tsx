@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { QuickAddExpenseSheet } from "../components/QuickAddExpenseSheet";
 import { EditTransactionModal } from "../components/EditTransactionModal";
 import { Fab } from "../components/Fab";
 import { MonthSelector } from "../components/MonthSelector";
 import { getUnsyncedTransactions } from "../lib/localDb";
+import { formatCurrency } from "../lib/format";
 import { paymentMethodLabel } from "../lib/paymentMethods";
 import { registerForPushNotifications } from "../lib/notifications";
 import { pullProductCatalog, pushPendingTransactions } from "../lib/sync";
@@ -125,41 +127,44 @@ export function DashboardScreen({ userId }: Props) {
           </Pressable>
         </View>
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderSectionHeader={({ section }) => (
-            <Text style={styles.sectionHeader}>{section.title}</Text>
-          )}
-          renderItem={({ item }) => {
-            const isIncome = item.type === "income";
-            const icon = rowIcon(item);
-            return (
-              <Pressable style={styles.corrienteRow} onPress={() => setEditingTransaction(item)}>
-                <Text style={styles.rowTime}>{formatArtTime(item.date)}</Text>
-                <View style={[styles.iconCircle, { backgroundColor: icon.bg }]}>
-                  <Ionicons name={icon.name} size={18} color={icon.tint} />
-                </View>
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>
-                    {item.product?.name ?? (isIncome ? "Ingreso" : "Gasto")}
+        <Animated.View key={monthOffset} entering={FadeInDown.duration(300)} style={styles.listWrapper}>
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            renderSectionHeader={({ section }) => (
+              <Text style={styles.sectionHeader}>{section.title}</Text>
+            )}
+            renderItem={({ item }) => {
+              const isIncome = item.type === "income";
+              const icon = rowIcon(item);
+              return (
+                <Pressable style={styles.corrienteRow} onPress={() => setEditingTransaction(item)}>
+                  <Text style={styles.rowTime}>{formatArtTime(item.date)}</Text>
+                  <View style={[styles.iconCircle, { backgroundColor: icon.bg }]}>
+                    <Ionicons name={icon.name} size={18} color={icon.tint} />
+                  </View>
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle}>
+                      {item.product?.name ?? (isIncome ? "Ingreso" : "Gasto")}
+                    </Text>
+                    <Text style={styles.rowSubtitle}>
+                      {item.store_name ? `${item.store_name} · ` : ""}
+                      {paymentMethodLabel(item.payment_method)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.rowAmount, isIncome ? styles.income : styles.expense]}>
+                    {isIncome ? "+" : "-"}
+                    {formatCurrency(item.amount)}
                   </Text>
-                  <Text style={styles.rowSubtitle}>
-                    {item.store_name ? `${item.store_name} · ` : ""}
-                    {paymentMethodLabel(item.payment_method)}
-                  </Text>
-                </View>
-                <Text style={[styles.rowAmount, isIncome ? styles.income : styles.expense]}>
-                  {isIncome ? "+" : "-"}${item.amount.toFixed(2)}
-                </Text>
-              </Pressable>
-            );
-          }}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>Todavía no registraste gastos este mes.</Text>
-          }
-        />
+                </Pressable>
+              );
+            }}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>Todavía no registraste gastos este mes.</Text>
+            }
+          />
+        </Animated.View>
       )}
 
       <Fab onPress={() => setSheetVisible(true)} />
@@ -185,6 +190,7 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.headingMd, fontSize: 24, color: colors.textPrimary },
   pendingBadge: { ...typography.bodySm, color: colors.warning },
   monthSelectorRow: { alignItems: "center", paddingBottom: spacing.sm },
+  listWrapper: { flex: 1 },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: 160, gap: spacing.sm },
   sectionHeader: {
     ...typography.headingMd,
