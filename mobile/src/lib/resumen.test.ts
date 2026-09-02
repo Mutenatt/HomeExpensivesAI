@@ -4,7 +4,7 @@
 // así que se mockea el cliente para poder cargar el módulo bajo Jest.
 jest.mock("./supabase", () => ({ supabase: {} }));
 
-import { aggregateEssentialSplit } from "./resumen";
+import { aggregateEssentialSplit, aggregateUsdExpenseTotal } from "./resumen";
 import type { TransactionWithProduct } from "../types";
 
 function makeRow(overrides: Partial<TransactionWithProduct>): TransactionWithProduct {
@@ -80,5 +80,35 @@ describe("aggregateEssentialSplit", () => {
       totalEssential: 500,
       totalNonEssential: 500,
     });
+  });
+
+  it("ignora las filas en USD (no se mezclan con el split de pesos)", () => {
+    const rows = [
+      makeRow({ amount: 500, currency: "ARS", product: { name: "Arroz", is_essential: true } }),
+      makeRow({ amount: 9999, currency: "USD", product: { name: "Notebook", is_essential: false } }),
+    ];
+    const split = aggregateEssentialSplit(rows);
+    expect(split).toEqual({
+      totalIncome: 0,
+      totalExpense: 500,
+      totalEssential: 500,
+      totalNonEssential: 0,
+    });
+  });
+});
+
+describe("aggregateUsdExpenseTotal", () => {
+  it("devuelve 0 para un array vacío", () => {
+    expect(aggregateUsdExpenseTotal([])).toBe(0);
+  });
+
+  it("suma solo los gastos en USD, ignorando ARS e ingresos", () => {
+    const rows = [
+      makeRow({ amount: 100, currency: "USD", type: "expense" }),
+      makeRow({ amount: 50, currency: "USD", type: "expense" }),
+      makeRow({ amount: 9999, currency: "ARS", type: "expense" }),
+      makeRow({ amount: 30, currency: "USD", type: "income" }),
+    ];
+    expect(aggregateUsdExpenseTotal(rows)).toBe(150);
   });
 });

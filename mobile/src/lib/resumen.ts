@@ -30,6 +30,8 @@ export interface EssentialSplit {
   totalNonEssential: number;
 }
 
+// Solo considera transacciones en ARS: USD se trackea por separado
+// (ver aggregateUsdExpenseTotal), sin mezclar montos de distinta moneda.
 export function aggregateEssentialSplit(rows: TransactionWithProduct[]): EssentialSplit {
   const split: EssentialSplit = {
     totalIncome: 0,
@@ -39,6 +41,7 @@ export function aggregateEssentialSplit(rows: TransactionWithProduct[]): Essenti
   };
 
   for (const row of rows) {
+    if (row.currency !== "ARS") continue;
     if (row.type === "income") {
       split.totalIncome += row.amount;
       continue;
@@ -52,4 +55,10 @@ export function aggregateEssentialSplit(rows: TransactionWithProduct[]): Essenti
   }
 
   return split;
+}
+
+export function aggregateUsdExpenseTotal(rows: TransactionWithProduct[]): number {
+  return rows
+    .filter((row) => row.currency === "USD" && row.type === "expense")
+    .reduce((sum, row) => sum + row.amount, 0);
 }
