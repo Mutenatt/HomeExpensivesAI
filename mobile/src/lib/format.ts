@@ -1,7 +1,10 @@
+import type { Currency } from "../types";
+
 // Formato local (es-AR): punto para miles, coma para decimales.
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number, currency: Currency = "ARS"): string {
   const sign = amount < 0 ? "-" : "";
+  const prefix = currency === "USD" ? "US$" : "$";
   const [intPart, decPart] = Math.abs(amount).toFixed(2).split(".");
   const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return `${sign}$${withThousands},${decPart}`;
+  return `${sign}${prefix}${withThousands},${decPart}`;
 }
