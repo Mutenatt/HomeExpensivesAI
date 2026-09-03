@@ -13,6 +13,7 @@ import { enqueuePendingTransaction } from "../lib/localDb";
 import { PAYMENT_METHODS } from "../lib/paymentMethods";
 import { searchCachedProducts, type ProductCacheRow } from "../lib/localDb";
 import { DateField } from "./DateField";
+import { sanitizeAmountInput } from "../lib/format";
 import { colors, radius, spacing, typography } from "../theme";
 import type { Currency, PaymentMethod, TransactionType } from "../types";
 
@@ -42,9 +43,11 @@ const emptyState = {
 export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
   const [state, setState] = useState(emptyState);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setState(emptyState);
+    setError(null);
   }
 
   async function handleProductQueryChange(text: string) {
@@ -77,6 +80,7 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
   async function handleSave() {
     if (!canSave || state.paymentMethod === null) return;
     setSaving(true);
+    setError(null);
     try {
       const localId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       await enqueuePendingTransaction({
@@ -95,6 +99,8 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
       });
       reset();
       onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar el gasto. Probá de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -124,8 +130,10 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
             keyboardType="decimal-pad"
             autoFocus
             value={state.amount}
-            onChangeText={(text) => setState((s) => ({ ...s, amount: text }))}
+            onChangeText={(text) => setState((s) => ({ ...s, amount: sanitizeAmountInput(text) }))}
           />
+
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
           <View style={styles.essentialRow}>
             <Text style={styles.essentialLabel}>USD</Text>
@@ -304,6 +312,7 @@ const styles = StyleSheet.create({
   typePillText: { ...typography.bodySm, color: colors.textPrimary, fontWeight: "600" },
   typePillTextActive: { color: "#fff" },
   amountInput: { ...typography.displayXl, paddingVertical: spacing.xs, color: colors.textPrimary },
+  errorText: { ...typography.bodySm, color: colors.negative },
   input: {
     borderWidth: 1,
     borderColor: colors.borderSubtle,

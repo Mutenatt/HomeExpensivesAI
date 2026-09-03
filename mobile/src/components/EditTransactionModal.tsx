@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from "rea
 import { DateField } from "./DateField";
 import { supabase } from "../lib/supabase";
 import { PAYMENT_METHODS } from "../lib/paymentMethods";
+import { sanitizeAmountInput } from "../lib/format";
 import { colors, radius, spacing, typography } from "../theme";
 import type { Currency, PaymentMethod, Transaction, TransactionType } from "../types";
 
@@ -21,6 +22,7 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
   const [date, setDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!transaction) return;
@@ -31,6 +33,7 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
     setPaymentMethod(transaction.payment_method);
     setDate(new Date(transaction.date));
     setConfirmingDelete(false);
+    setError(null);
   }, [transaction]);
 
   if (!transaction) return null;
@@ -41,8 +44,9 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
   async function handleSave() {
     if (!canSave || !transaction || paymentMethod === null) return;
     setSaving(true);
+    setError(null);
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("transactions")
         .update({
           amount: parsedAmount,
@@ -54,9 +58,13 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
         })
         .eq("id", transaction.id)
         .eq("user_id", transaction.user_id);
-      if (!error) {
+      if (updateError) {
+        setError(updateError.message);
+      } else {
         onSaved();
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar el gasto. Probá de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -65,16 +73,21 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
   async function handleDelete() {
     if (!transaction) return;
     setSaving(true);
+    setError(null);
     try {
       await supabase.from("installments").delete().eq("transaction_id", transaction.id);
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from("transactions")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", transaction.id)
         .eq("user_id", transaction.user_id);
-      if (!error) {
+      if (deleteError) {
+        setError(deleteError.message);
+      } else {
         onSaved();
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo eliminar el gasto. Probá de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -105,7 +118,7 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
             placeholder="$ 0"
             keyboardType="decimal-pad"
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={(text) => setAmount(sanitizeAmountInput(text))}
           />
 
           <View style={styles.currencyRow}>
@@ -143,6 +156,8 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
               </Pressable>
             ))}
           </View>
+
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
           {confirmingDelete ? (
             <View style={styles.confirmRow}>
@@ -193,6 +208,7 @@ const styles = StyleSheet.create({
   typePillText: { ...typography.bodySm, color: colors.textPrimary, fontWeight: "600" },
   typePillTextActive: { color: "#fff" },
   amountInput: { ...typography.displayXl, fontSize: 28, paddingVertical: spacing.xs, color: colors.textPrimary },
+  errorText: { ...typography.bodySm, color: colors.negative },
   input: {
     borderWidth: 1,
     borderColor: colors.borderSubtle,
