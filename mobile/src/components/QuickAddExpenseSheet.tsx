@@ -13,7 +13,7 @@ import { enqueuePendingTransaction } from "../lib/localDb";
 import { PAYMENT_METHODS } from "../lib/paymentMethods";
 import { searchCachedProducts, type ProductCacheRow } from "../lib/localDb";
 import { DateField } from "./DateField";
-import { sanitizeAmountInput } from "../lib/format";
+import { describeSaveError, sanitizeAmountInput } from "../lib/format";
 import { colors, radius, spacing, typography } from "../theme";
 import type { Currency, PaymentMethod, TransactionType } from "../types";
 
@@ -100,7 +100,7 @@ export function QuickAddExpenseSheet({ visible, onClose, onSaved }: Props) {
       reset();
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar el gasto. Probá de nuevo.");
+      setError(describeSaveError(err));
     } finally {
       setSaving(false);
     }

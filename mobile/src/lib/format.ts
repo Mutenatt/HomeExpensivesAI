@@ -16,3 +16,13 @@ export function sanitizeAmountInput(text: string): string {
   const match = cleaned.match(/^\d*([.,]\d*)?/);
   return match ? match[0] : "";
 }
+
+// En web, expo-sqlite usa OPFS y solo permite un handle abierto por archivo: si la
+// app está abierta en otra pestaña, el guardado local falla con este error de bajo
+// nivel. Lo traducimos a algo que la persona pueda accionar.
+export function describeSaveError(err: unknown): string {
+  if (err instanceof Error && err.name === "NoModificationAllowedError") {
+    return "Esta app está abierta en otra pestaña o ventana. Cerrala y volvé a intentar.";
+  }
+  return err instanceof Error ? err.message : "No se pudo guardar. Probá de nuevo.";
+}

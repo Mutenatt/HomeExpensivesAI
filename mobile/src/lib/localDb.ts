@@ -9,13 +9,34 @@ let dbPromise: Promise<LocalDb> | null = null;
 
 export function getLocalDb(): Promise<LocalDb> {
   if (!dbPromise) {
-    dbPromise = openAndMigrate();
+    // Si falla (p. ej. el archivo local está bloqueado por otra pestaña), no dejamos
+    // la promesa rechazada cacheada: la próxima llamada debe poder reintentar.
+    dbPromise = openAndMigrate().catch((err) => {
+      dbPromise = null;
+      throw err;
+    });
   }
   return dbPromise;
 }
 
+// En web, expo-sqlite usa OPFS: solo se puede tener un "access handle" abierto por
+// archivo a la vez. Si otra pestaña recién se cerró, el navegador puede tardar un
+// instante en liberar el handle, así que reintentamos antes de darnos por vencidos.
+async function openDatabaseWithRetry(retries = 3, delayMs = 400): Promise<SQLite.SQLiteDatabase> {
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      return await SQLite.openDatabaseAsync(DB_NAME);
+    } catch (err) {
+      const isFileLocked = err instanceof Error && err.name === "NoModificationAllowedError";
+      if (!isFileLocked || attempt === retries) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+    }
+  }
+  throw new Error("No se pudo abrir la base de datos local.");
+}
+
 async function openAndMigrate(): Promise<LocalDb> {
-  const db = await SQLite.openDatabaseAsync(DB_NAME);
+  const db = await openDatabaseWithRetry();
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
 

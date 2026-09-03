@@ -3,7 +3,7 @@ import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from "rea
 import { DateField } from "./DateField";
 import { supabase } from "../lib/supabase";
 import { PAYMENT_METHODS } from "../lib/paymentMethods";
-import { sanitizeAmountInput } from "../lib/format";
+import { describeSaveError, sanitizeAmountInput } from "../lib/format";
 import { colors, radius, spacing, typography } from "../theme";
 import type { Currency, PaymentMethod, Transaction, TransactionType } from "../types";
 
@@ -64,7 +64,7 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
         onSaved();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar el gasto. Probá de nuevo.");
+      setError(describeSaveError(err));
     } finally {
       setSaving(false);
     }
@@ -87,7 +87,7 @@ export function EditTransactionModal({ transaction, onClose, onSaved }: Props) {
         onSaved();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo eliminar el gasto. Probá de nuevo.");
+      setError(describeSaveError(err));
     } finally {
       setSaving(false);
     }
